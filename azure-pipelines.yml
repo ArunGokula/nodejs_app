@@ -1,4 +1,5 @@
-#ADO-pipelines
+# azure-pipelines.yml
+# Purpose: Build pipeline for Node.js app - install, test, build, and publish artifact
 
 trigger:
   branches:
@@ -11,3 +12,34 @@ pool:
 variables:
   nodeVersion: '18.x'
   buildDir: 'dist'          # Directory where build output is generated
+
+stages:
+  - stage: Build
+    displayName: 'Build Stage'
+    jobs:
+      - job: Build_Job
+        displayName: 'Build and Test Node.js App'
+        steps:
+          - task: NodeTool@0
+            inputs:
+              versionSpec: '$(nodeVersion)'
+            displayName: 'Install Node.js'
+
+          - script: |
+              npm install
+            displayName: 'Install Dependencies'
+
+          - script: |
+              npm test
+            displayName: 'Run Unit Tests'
+
+          - script: |
+              npm run build
+            displayName: 'Build Application'
+
+          - task: PublishBuildArtifacts@1
+            inputs:
+              PathtoPublish: '$(Build.SourcesDirectory)/$(buildDir)'
+              ArtifactName: 'drop'
+              publishLocation: 'Container'
+            displayName: 'Publish Build Artifact'
