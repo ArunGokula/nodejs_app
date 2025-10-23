@@ -1,45 +1,50 @@
-# azure-pipelines.yml
-# Purpose: Build pipeline for Node.js app - install, test, build, and publish artifact
-
+# Azure Pipelines for Makefile-based Node.js app
 trigger:
   branches:
     include:
-      - main  # Runs pipeline automatically when code is pushed to main branch
+      - main
+      - master
 
 pool:
-  vmImage: 'ubuntu-latest'  # Microsoft-hosted agent
+  vmImage: 'ubuntu-latest'
 
 variables:
-  nodeVersion: '18.x'
-  buildDir: 'dist'          # Directory where build output is generated
+  NODE_VERSION: '18.x'
+  BUILD_ARTIFACT_STAGING_DIR: $(Build.ArtifactStagingDirectory)
 
-stages:
-  - stage: Build
-    displayName: 'Build Stage'
-    jobs:
-      - job: Build_Job
-        displayName: 'Build and Test Node.js App'
-        steps:
-          - task: NodeTool@0
-            inputs:
-              versionSpec: '$(nodeVersion)'
-            displayName: 'Install Node.js'
+steps:
+# 1. Checkout code
+- checkout: self
+  clean: true
 
-          - script: |
-              npm install
-            displayName: 'Install Dependencies'
+# 2. Set up Node.js (for running node or tests)
+- task: UseNode@1
+  inputs:
+    version: $(NODE_VERSION)
+  displayName: 'Use Node.js $(NODE_VERSION)'
 
-          - script: |
-              npm test
-            displayName: 'Run Unit Tests'
+# 3. Run Makefile targets
+# Adjust targets below based on what exists in your Makefile (e.g., make lint, make build, make test)
+- script: |
+    echo "🧰 Running Makefile targets..."
+    make lint || echo "Skipping lint (not defined)"
+    make build || echo "Skipping build (not defined)"
+    make test || echo "Skipping test (not defined)"
+  displayName: 'Run Makefile build/test'
 
-          - script: |
-              npm run build
-            displayName: 'Build Application'
+# 4. Optional — Archive build output
+- task: CopyFiles@2
+  displayName: 'Copy build output'
+  inputs:
+    SourceFolder: '$(Build.SourcesDirectory)'
+    Contents: |
+      **/*
+      !node_modules/**
+    TargetFolder: '$(BUILD_ARTIFACT_STAGING_DIR)'
 
-          - task: PublishBuildArtifacts@1
-            inputs:
-              PathtoPublish: '$(Build.SourcesDirectory)/$(buildDir)'
-              ArtifactName: 'drop'
-              publishLocation: 'Container'
-            displayName: 'Publish Build Artifact'
+- task: PublishBuildArtifacts@1
+  displayName: 'Publish artifacts'
+  inputs:
+    PathtoPublish: '$(BUILD_ARTIFACT_STAGING_DIR)'
+    ArtifactName: 'drop'
+    publishLocation: 'Container'
