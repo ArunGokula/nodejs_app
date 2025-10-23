@@ -1,0 +1,13 @@
+#ADO-pipelines
+
+trigger:
+  branches:
+    include:
+      - main  # Runs pipeline automatically when code is pushed to main branch
+
+pool:
+  vmImage: 'ubuntu-latest'  # Microsoft-hosted agent
+
+variables:
+  nodeVersion: '18.x'
+  buildDir: 'dist'          # Directory where build output is generated
